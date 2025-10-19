@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HAKIIMI Supplements Receipt</title>
+
+<style>
+  body {
+    font-family: "Poppins", sans-serif;
+    background-color: #0b0f1c;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 480px;
+    margin: 20px auto;
+    background: #11162a;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    padding: 20px;
+  }
+  h2 {
+    text-align: center;
+    color: #a0b0ff;
+    margin-bottom: 10px;
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+  .logo {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  .logo img {
+    width: 180px;
+    height: auto;
+    filter: drop-shadow(0 0 8px rgba(160,176,255,0.6));
+  }
+  label {
+    font-weight: 600;
+    display: block;
+    margin-top: 10px;
+  }
+  input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 8px;
+    border: none;
+    background: #1b223d;
+    color: #fff;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #4f5eff, #8a4fff);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover {
+    background: linear-gradient(90deg, #8a4fff, #4f5eff);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border-bottom: 1px solid #ccc;
+    padding: 5px;
+    text-align: left;
+    font-size: 14px;
+    position: relative;
+  }
+  .more-options {
+    cursor: pointer;
+    float: right;
+    font-weight: bold;
+  }
+  .options-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: #22254d;
+    color: #fff;
+    border-radius: 5px;
+    padding: 5px;
+    z-index: 10;
+  }
+  .options-menu button {
+    width: 80px;
+    margin: 2px 0;
+    padding: 4px;
+    font-size: 12px;
+  }
+  .receipt {
+    background: #fff;
+    color: #000;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+    display: none;
+  }
+  .receipt-header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    margin-bottom: 10px;
+  }
+  .receipt img {
+    width: 150px;
+    height: auto;
+    margin-bottom: 8px;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 10px;
+    border-top: 1px dashed #000;
+    padding-top: 5px;
+  }
+  .discount-line {
+    text-align: right;
+    font-size: 16px;
+    margin-top: 5px;
+  }
+  #downloadBtn {
+    display: block;
+    margin-top: 10px;
+    background: #4caf50;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">
+    <img src="online logo.png" alt="HAKIIMI Logo" />
+  </div>
+  <h2>HAKIIMI SUPPLEMENTS ONLINE</h2>
+
+  <label>Customer Name</label>
+  <input type="text" id="name" placeholder="Enter customer name" />
+
+  <label>Phone Number</label>
+  <input type="text" id="phone" placeholder="Enter phone number" />
+
+  <label>Area</label>
+  <input type="text" id="area" placeholder="Enter area or district" />
+
+  <label>Discount ($)</label>
+  <input type="number" id="discount" placeholder="Enter discount amount" step="0.01" oninput="toggleDiscount()" />
+
+  <h3 style="margin-top:20px;">Add Items</h3>
+
+  <div id="itemInputs">
+    <input type="text" id="itemName" placeholder="Item name" />
+    <input type="number" id="qty" placeholder="Quantity" />
+    <input type="number" id="price" placeholder="Price $" />
+    <button onclick="addItem()">Add Item</button>
+  </div>
+
+  <table id="itemsTable">
+    <thead>
+      <tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h3 style="text-align:right;margin-top:10px;">Total: $<span id="total">0.00</span></h3>
+
+  <button onclick="generateReceipt()">Generate Receipt</button>
+  <button id="downloadBtn" onclick="downloadReceipt()">Download Receipt</button>
+
+  <div id="receipt" class="receipt">
+    <div class="receipt-header">
+      <img src="online logo.png" alt="HAKIIMI Logo" />
+      <h3>HAKIIMI SUPPLEMENTS ONLINE</h3>
+    </div>
+    <div id="receiptContent"></div>
+    <div class="footer">
+      <p>Thank you for shopping with HAKIIMI!</p>
+      <p id="date"></p>
+    </div>
+  </div>
+</div>
+
+<!-- HTML2Canvas CDN for JPG Download -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+let items = [];
+let lastCanvas = null;
+
+function addItem() {
+  const name = document.getElementById("itemName").value;
+  const qty = parseFloat(document.getElementById("qty").value);
+  const price = parseFloat(document.getElementById("price").value);
+
+  if (!name || !qty || !price) {
+    alert("Please fill all item details.");
+    return;
+  }
+
+  const subtotal = qty * price;
+  items.push({ name, qty, price, subtotal });
+
+  updateTable();
+  clearItemInputs();
+}
+
+function updateTable() {
+  const tbody = document.querySelector("#itemsTable tbody");
+  tbody.innerHTML = "";
+
+  items.forEach((item, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.name}</td>
+      <td>${item.qty}</td>
+      <td>$${item.price}</td>
+      <td>
+        $${item.subtotal.toFixed(2)}
+        <span class="more-options" onclick="toggleOptions(${index})">...</span>
+        <div class="options-menu" id="options-${index}">
+          <button onclick="editItem(${index})">Edit</button>
+          <button onclick="deleteItem(${index})">Delete</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  updateTotal();
+}
+
+function toggleOptions(index) {
+  const menu = document.getElementById(`options-${index}`);
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function editItem(index) {
+  const item = items[index];
+  document.getElementById("itemName").value = item.name;
+  document.getElementById("qty").value = item.qty;
+  document.getElementById("price").value = item.price;
+  deleteItem(index);
+}
+
+function deleteItem(index) {
+  items.splice(index, 1);
+  updateTable();
+}
+
+function updateTotal() {
+  const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+  document.getElementById("total").textContent = total.toFixed(2);
+}
+
+function clearItemInputs() {
+  document.getElementById("itemName").value = "";
+  document.getElementById("qty").value = "";
+  document.getElementById("price").value = "";
+}
+
+function toggleDiscount() {
+  const discountValue = document.getElementById("discount").value;
+  document.getElementById("discount").style.display = (discountValue && parseFloat(discountValue) > 0) ? "none" : "block";
+}
+
+function generateReceipt() {
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const area = document.getElementById("area").value;
+  const discountInput = parseFloat(document.getElementById("discount").value) || 0;
+  const date = new Date().toLocaleString();
+  let total = items.reduce((acc, item) => acc + item.subtotal, 0);
+
+  if (!name || !phone || !area || items.length === 0) {
+    alert("Please fill all details and add items.");
+    return;
+  }
+
+  let displayDiscount = discountInput > 0 ? discountInput.toFixed(2) : 0;
+  let finalTotal = total - discountInput;
+  if(finalTotal < 0) finalTotal = 0;
+
+  let itemRows = items.map(
+    (item) => `<tr><td>${item.name}</td><td>${item.qty}</td><td>$${item.price}</td><td>$${item.subtotal.toFixed(2)}</td></tr>`
+  ).join("");
+
+  let receiptHTML = `
+    <p><strong>Customer:</strong> ${name}</p>
+    <p><strong>Phone:</strong> ${phone}</p>
+    <p><strong>Area:</strong> ${area}</p>
+    <table>
+      <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    ${discountInput > 0 ? `<div class="discount-line">Discount: $${displayDiscount}</div>` : ""}
+    <h4 style="text-align:right;margin-top:10px;">Total: $${finalTotal.toFixed(2)}</h4>
+  `;
+
+  document.getElementById("receiptContent").innerHTML = receiptHTML;
+  document.getElementById("date").innerText = date;
+  document.getElementById("receipt").style.display = "block";
+
+  html2canvas(document.querySelector("#receipt"), {scale: 2}).then(canvas => {
+    lastCanvas = canvas;
+  });
+}
+
+function downloadReceipt() {
+  const receiptDiv = document.getElementById("receipt");
+  if (!receiptDiv.style.display || receiptDiv.style.display === "none") {
+    alert("Please generate receipt first!");
+    return;
+  }
+  html2canvas(receiptDiv, { scale: 2 }).then(canvas => {
+    const link = document.createElement("a");
+    link.download = "receipt.jpg";
+    link.href = canvas.toDataURL("image/jpeg");
+    link.click();
+  });
+}
+</script>
+
+</body>
+</html>
